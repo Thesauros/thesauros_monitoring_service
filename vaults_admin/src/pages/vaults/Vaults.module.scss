@@ -1,0 +1,45 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.vaultsContainer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+
+  @media screen and (max-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media screen and (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media screen and (max-width: 576px) {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+.vaultContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.totalTvlContainer {
+  width: 100%;
+}
+
+.card {
+  min-height: 300px;
+}
+
+.vaultTvlChartContainer {
+  grid-column-start: span 2;
+}
+
+.estimatedTotalAssets {
+  grid-column-start: span 3;
+}

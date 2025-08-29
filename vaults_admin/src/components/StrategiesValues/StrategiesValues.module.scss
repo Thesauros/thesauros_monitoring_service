@@ -1,0 +1,25 @@
+.tableHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  span:nth-child(1) {
+    max-width: 120px;
+    width: 100%;
+  }
+
+  span {
+    font-weight: 700;
+  }
+}
+
+.debtRatio {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  span:nth-child(1) {
+    max-width: 160px;
+    width: 100%;
+  }
+}
