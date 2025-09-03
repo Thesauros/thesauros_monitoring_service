@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Thesauros Monitoring Service - Hetzner Deployment Script
-# Execute on server 46.62.166.163 as root
+# Execute from the cloned repository directory on server 46.62.166.163 as root
 
 set -e
 
@@ -30,6 +30,20 @@ warning() {
 # Check root privileges
 if [ "$EUID" -ne 0 ]; then
     error "This script must be run as root"
+fi
+
+# Check if we're in a git repository
+if [ ! -d ".git" ]; then
+    error "This script must be run from a git repository directory"
+fi
+
+# Get current directory
+CURRENT_DIR=$(pwd)
+log "Working directory: $CURRENT_DIR"
+
+# Check if required files exist
+if [ ! -f "server.js" ] || [ ! -f "package.json" ]; then
+    error "Required files (server.js, package.json) not found. Make sure you're in the correct repository directory"
 fi
 
 # Update system
@@ -67,18 +81,11 @@ log "Creating thesauros user..."
 useradd -m -s /bin/bash thesauros || true
 usermod -aG sudo thesauros
 
-# Create application directory
-log "Creating directories..."
+# Create application directory and copy files
+log "Setting up application directory..."
 mkdir -p /opt/thesauros
-chown thesauros:thesauros /opt/thesauros
-
-# Switch to thesauros user for updating existing repository
-log "Updating existing repository..."
-su - thesauros << 'EOF'
-cd /opt/thesauros
-git pull origin main
-npm install
-EOF
+cp -r . /opt/thesauros/
+chown -R thesauros:thesauros /opt/thesauros
 
 # Create .env file
 log "Creating .env file..."
@@ -96,6 +103,7 @@ chown thesauros:thesauros /opt/thesauros/.env
 log "Configuring PM2..."
 su - thesauros << 'EOF'
 cd /opt/thesauros
+npm install
 pm2 start server.js --name "thesauros-monitoring" --env production
 pm2 save
 pm2 startup
@@ -163,3 +171,4 @@ log "📊 PM2 status: pm2 status"
 log "📝 PM2 logs: pm2 logs thesauros-monitoring"
 log "🔧 Restart: pm2 restart thesauros-monitoring"
 log "📋 Nginx status: systemctl status nginx"
+log "📁 Application copied to: /opt/thesauros"
