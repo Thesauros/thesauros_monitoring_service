@@ -1,67 +1,67 @@
 # Thesauros Monitoring UI
 
-Простое веб-приложение для мониторинга DeFi протокола Thesauros на Arbitrum One.
+A simple web application for monitoring the Thesauros DeFi protocol on Arbitrum One.
 
-## 🚀 Быстрый старт
+## 🚀 Quick Start
 
-Откройте браузер и перейдите по адресу http://5.161.205.208
-hesauros Monitoring Dashboard
-API доступен по адресу http://5.161.205.208/api/health
+Open your browser and navigate to http://5.161.205.208
+Thesauros Monitoring Dashboard
+API is available at http://5.161.205.208/api/health
 
-### Локальная разработка
+### Local Development
 
-#### Перезапуск Nginx
+#### Restart Nginx
 systemctl restart nginx
 
-#### Просмотр логов Nginx
+#### View Nginx logs
 tail -f /var/log/nginx/access.log
 tail -f /var/log/nginx/error.log
 
-#### Перезапуск приложения
+#### Restart application
 docker-compose restart
 
-#### Просмотр логов приложения
+#### View application logs
 docker-compose logs -f
 
 ```bash
-# Установка зависимостей
+# Install dependencies
 npm install
 
-# Запуск в режиме разработки
+# Run in development mode
 npm run dev
 
-# Приложение будет доступно на http://localhost:3001
+# Application will be available at http://localhost:3001
 ```
 
-### Деплой на Hetzner
+### Hetzner Deployment
 
-Для деплоя на Hetzner Cloud используйте один из вариантов:
+For deployment on Hetzner Cloud, use one of the following options:
 
-#### Вариант 1: Ручной деплой (рекомендуется для новичков)
+#### Option 1: Manual deployment (recommended for beginners)
 
 ```bash
 chmod +x manual-deploy.sh
 ./manual-deploy.sh
 ```
 
-#### Вариант 2: Автоматический деплой
+#### Option 2: Automatic deployment
 
 ```bash
 chmod +x deploy-hetzner.sh
 ./deploy-hetzner.sh
 ```
 
-📖 **Подробная инструкция**: [HETZNER_DEPLOYMENT_GUIDE.md](HETZNER_DEPLOYMENT_GUIDE.md)
+📖 **Detailed guide**: [HETZNER_DEPLOYMENT.md](HETZNER_DEPLOYMENT.md)
 
-## 📋 Функциональность
+## 📋 Features
 
-- **Мониторинг Vault'ов**: Отслеживание TVL, активных провайдеров
-- **APY анализ**: Показ доходности по различным токенам
-- **События**: Отображение последних транзакций
-- **Сетевой статус**: Информация о блокчейне Arbitrum One
-- **Responsive UI**: Адаптивный интерфейс для всех устройств
+- **Vault Monitoring**: Track TVL, active providers
+- **APY Analysis**: Show yields for various tokens
+- **Events**: Display recent transactions
+- **Network Status**: Information about Arbitrum One blockchain
+- **Responsive UI**: Adaptive interface for all devices
 
-## 🏗️ Архитектура
+## 🏗️ Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -70,97 +70,97 @@ chmod +x deploy-hetzner.sh
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 🔧 Технологии
+## 🔧 Technologies
 
 - **Backend**: Node.js, Express.js
 - **Frontend**: Vanilla HTML/CSS/JavaScript
-- **Blockchain**: Ethers.js для взаимодействия с Arbitrum One
+- **Blockchain**: Ethers.js for Arbitrum One interaction
 - **Deployment**: Docker, Docker Compose, Nginx
 - **Infrastructure**: Hetzner Cloud
 
-## 📁 Структура проекта
+## 📁 Project Structure
 
 ```
 monitoring-ui/
-├── server.js              # Express сервер
-├── simple-dashboard.html  # Фронтенд интерфейс
-├── package.json           # Зависимости Node.js
-├── Dockerfile            # Docker образ
-├── docker-compose.yml    # Docker Compose конфигурация
-├── deploy-hetzner.sh     # Автоматический деплой
-├── manual-deploy.sh      # Ручной деплой
-└── deployments/          # Конфигурация контрактов
+├── server.js              # Express server
+├── simple-dashboard.html  # Frontend interface
+├── package.json           # Node.js dependencies
+├── Dockerfile            # Docker image
+├── docker-compose.yml    # Docker Compose configuration
+├── deploy-hetzner.sh     # Automatic deployment
+├── manual-deploy.sh      # Manual deployment
+└── deployments/          # Contract configuration
     └── arbitrumOne/
         └── deployed-vaults.json
 ```
 
 ## 🌐 API Endpoints
 
-- `GET /api/health` - Проверка здоровья сервера
-- `GET /api/vaults` - Данные vault'ов
-- `GET /api/providers` - Данные провайдеров
-- `GET /api/apy` - APY данные
-- `GET /api/events` - Последние события
-- `GET /api/dashboard` - Все данные дашборда
+- `GET /api/health` - Server health check
+- `GET /api/vaults` - Vault data
+- `GET /api/providers` - Provider data
+- `GET /api/apy` - APY data
+- `GET /api/events` - Recent events
+- `GET /api/dashboard` - All dashboard data
 
-## 🔒 Безопасность
+## 🔒 Security
 
-- Rate limiting для API
-- CORS настройки
-- Helmet.js для безопасности заголовков
-- UFW файрвол на сервере
-- SSL/HTTPS через Let's Encrypt
+- Rate limiting for API
+- CORS settings
+- Helmet.js for security headers
+- UFW firewall on server
+- SSL/HTTPS through Let's Encrypt
 
-## 💰 Стоимость хостинга
+## 💰 Hosting Cost
 
-- **Hetzner CX11**: ~€5/месяц (2 vCPU, 2GB RAM)
-- **Hetzner CX21**: ~€10/месяц (3 vCPU, 4GB RAM)
+- **Hetzner CX11**: ~€5/month (2 vCPU, 2GB RAM)
+- **Hetzner CX21**: ~€10/month (3 vCPU, 4GB RAM)
 
-## 🚨 Устранение неполадок
+## 🚨 Troubleshooting
 
-### Локальная разработка
+### Local Development
 
 ```bash
-# Проверка портов
+# Check ports
 lsof -i :3001
 
-# Очистка node_modules
+# Clean node_modules
 rm -rf node_modules package-lock.json
 npm install
 ```
 
-### Продакшн
+### Production
 
 ```bash
-# Проверка логов
+# Check logs
 docker-compose logs -f
 
-# Перезапуск приложения
+# Restart application
 docker-compose restart
 
-# Проверка статуса
+# Check status
 docker-compose ps
 ```
 
-## 📞 Поддержка
+## 📞 Support
 
-Если у вас возникли проблемы:
+If you encounter problems:
 
-1. Проверьте логи: `docker-compose logs`
-2. Убедитесь, что все порты открыты
-3. Проверьте DNS настройки (если используете домен)
-4. Обратитесь к [HETZNER_DEPLOYMENT_GUIDE.md](HETZNER_DEPLOYMENT_GUIDE.md)
+1. Check logs: `docker-compose logs`
+2. Ensure all ports are open
+3. Check DNS settings (if using domain)
+4. Refer to [HETZNER_DEPLOYMENT.md](HETZNER_DEPLOYMENT.md)
 
-## 🔄 Обновление
+## 🔄 Updates
 
 ```bash
-# Локально
+# Locally
 git pull
 npm install
 npm run dev
 
-# На сервере
-ssh root@IP_СЕРВЕРА
+# On server
+ssh root@SERVER_IP
 cd /opt/thesauros-monitoring
 git pull
 docker-compose down
@@ -169,4 +169,4 @@ docker-compose up -d --build
 
 ---
 
-**Создано командой Thesauros** 🚀
+**Created by Thesauros Team** 🚀
