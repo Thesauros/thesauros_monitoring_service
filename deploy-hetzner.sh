@@ -72,11 +72,11 @@ log "Creating directories..."
 mkdir -p /opt/thesauros
 chown thesauros:thesauros /opt/thesauros
 
-# Switch to thesauros user for cloning
-log "Cloning repository..."
+# Switch to thesauros user for updating existing repository
+log "Updating existing repository..."
 su - thesauros << 'EOF'
 cd /opt/thesauros
-git clone https://github.com/Thesauros/souros_monitoring_service.git .
+git pull origin main
 npm install
 EOF
 
