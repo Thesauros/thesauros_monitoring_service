@@ -52,6 +52,10 @@
     "CompoundV3Provider": {
       "address": "0x4382190FDbf4befA016Ea412f34eb54593312aD5",
       "status": "deployed-verified"
+    },
+    "EthenaProvider": {
+      "address": "0x2a8b5c1d089c224ddaBA3a1D7C00c2788642D80E",
+      "status": "deployed-verified"
     }
   },
   "tokenAddresses": {
