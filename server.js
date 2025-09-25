@@ -150,6 +150,36 @@ async function getVaultData() {
       const tvl = ethers.formatUnits(totalAssets, decimals);
       const shares = ethers.formatUnits(totalShares, 18);
       
+      // Get provider info
+      let providerInfo = null;
+      try {
+        const providerContract = new ethers.Contract(activeProvider, [
+          'function getIdentifier() view returns (string memory)',
+          'function getDepositRate(address vault) view returns (uint256 rate)'
+        ], provider);
+        
+        const [providerName, rateInRay] = await Promise.all([
+          providerContract.getIdentifier(),
+          providerContract.getDepositRate(vaultConfig.address)
+        ]);
+        
+        const apy = (Number(rateInRay) / 1e25).toFixed(4);
+        
+        providerInfo = {
+          address: activeProvider,
+          name: providerName,
+          apy: apy
+        };
+      } catch (error) {
+        console.error(`Error fetching provider info for ${token}:`, error);
+        providerInfo = {
+          address: activeProvider,
+          name: 'unknown',
+          apy: '0.0000',
+          error: error.message
+        };
+      }
+      
       vaults.push({
         name: vaultConfig.name,
         symbol: vaultConfig.symbol,
@@ -158,6 +188,7 @@ async function getVaultData() {
         tvl: tvl,
         totalShares: shares,
         activeProvider: activeProvider,
+        providerInfo: providerInfo,
         token: token,
         status: vaultConfig.status
       });
@@ -212,17 +243,49 @@ async function getAPYData() {
   const apyData = [];
   
   if (config) {
-    for (const [token, address] of Object.entries(config.tokenAddresses)) {
-      const baseAPY = 3.5;
-      const randomFactor = Math.random() * 2 - 1;
-      const apy = Math.max(0, baseAPY + randomFactor);
-      
-      apyData.push({
-        token: token,
-        address: address,
-        apy: apy.toFixed(4),
-        source: 'simulated'
-      });
+    for (const [token, vaultConfig] of Object.entries(config.vaults)) {
+      try {
+        const vault = new ethers.Contract(vaultConfig.address, [
+          'function activeProvider() view returns (address)'
+        ], provider);
+        
+        const activeProviderAddress = await vault.activeProvider();
+        
+        // Get provider contract
+        const providerContract = new ethers.Contract(activeProviderAddress, [
+          'function getDepositRate(address vault) view returns (uint256 rate)',
+          'function getIdentifier() view returns (string memory)'
+        ], provider);
+        
+        // Get real APY from provider
+        const rateInRay = await providerContract.getDepositRate(vaultConfig.address);
+        const providerName = await providerContract.getIdentifier();
+        
+        // Convert from ray (1e27) to percentage
+        const apy = (Number(rateInRay) / 1e25).toFixed(4); // Convert to percentage
+        
+        apyData.push({
+          token: token,
+          vaultAddress: vaultConfig.address,
+          assetAddress: vaultConfig.asset,
+          apy: apy,
+          provider: providerName,
+          providerAddress: activeProviderAddress,
+          source: 'blockchain'
+        });
+      } catch (error) {
+        console.error(`Error fetching APY for ${token}:`, error);
+        apyData.push({
+          token: token,
+          vaultAddress: vaultConfig.address,
+          assetAddress: vaultConfig.asset,
+          apy: '0.0000',
+          provider: 'unknown',
+          providerAddress: 'unknown',
+          source: 'error',
+          error: error.message
+        });
+      }
     }
   }
   
