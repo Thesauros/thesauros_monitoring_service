@@ -1,60 +1,42 @@
 {
   "network": "arbitrumOne",
   "chainId": 42161,
-  "deployedAt": "2024-12-19",
+  "deployedAt": "2025-09-19T00:00:00.000Z",
   "vaults": {
-    "WETH": {
-      "address": "0x78c11f63E6840820be18fDA461Ab16f23da5884f",
-      "name": "Thesauros WETH Vault",
-      "symbol": "tWETH",
-      "asset": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-      "status": "deployed-verified-setup"
-    },
     "USDC": {
-      "address": "0xdf5AFad7f88888bEE944d14982c2d9eBA65653e6",
-      "name": "Thesauros USDC Vault",
-      "symbol": "tUSDC",
+      "address": "0x57C10bd3fdB2849384dDe954f63d37DfAD9d7d70",
+      "name": "USDC Vault",
+      "symbol": "USDC-VAULT",
       "asset": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
       "status": "deployed-verified-setup"
     },
     "USDT": {
-      "address": "0xe1D34AB80090da3498Fc5D0696a2Cf82971E5eC6",
-      "name": "Rebalance USDT",
-      "symbol": "tUSDT",
+      "address": "0xcd72118C0707D315fa13350a63596dCd9B294A30",
+      "name": "USDT Vault",
+      "symbol": "USDT-VAULT",
       "asset": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
-      "status": "deployed-verified-setup"
-    },
-    "DAI": {
-      "address": "0xBC64abbCa87289746f2B01C8ab02A78c9fC92B89",
-      "name": "Thesauros DAI Vault",
-      "symbol": "tDAI",
-      "asset": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
       "status": "deployed-verified-setup"
     }
   },
   "baseContracts": {
     "Timelock": {
-      "address": "0x0c5cEd804488E4AbdE6B809164e72cc0F91896b5",
+      "address": "0xDCa08813082952AAF61A4709A706c8834c37Fab2",
       "status": "deployed-verified"
     },
     "VaultManager": {
-      "address": "0xAeEcf7F780e88B155df330434Ef29b2B077024e0",
+      "address": "0x2A7B773e35f52308D6663a1967B9C647ce76bccd",
       "status": "deployed-verified"
     },
     "ProviderManager": {
-      "address": "0x30dC35B78a401Fd0227C229ADF6d0F5097358EF9",
+      "address": "0x5F9F7ae7a8Ea732220E19694fb07da3f296386c5",
       "status": "deployed-verified"
     },
     "AaveV3Provider": {
-      "address": "0xE1Cfb1BDb3901dcEe9F21146c1F299c775d9B65C",
+      "address": "0xbeEdb89DC47cab2678eBB796cfc8131062F16E39",
       "status": "deployed-verified"
     },
     "CompoundV3Provider": {
-      "address": "0x4382190FDbf4befA016Ea412f34eb54593312aD5",
-      "status": "deployed-verified"
-    },
-    "EthenaProvider": {
-      "address": "0x2a8b5c1d089c224ddaBA3a1D7C00c2788642D80E",
+      "address": "0xaBD932E0Fff6417a4Af16431d8D86a4e62d62fA3",
       "status": "deployed-verified"
     }
   },
@@ -62,9 +44,7 @@
     "WETH": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
     "USDC": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
     "USDT": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
-    "DAI": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
-    "FRAX": "0x17FC002b466eEc40DaE837Fc4bE5c67993ddBd6F",
     "USDC_e": "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8"
   },
-  "treasury": "0xc8a682F0991323777253ffa5fa6F19035685E723"
+  "treasury": "0xafA9ed53c33bbD8DE300481ce150dB3D35738F9D"
 }
