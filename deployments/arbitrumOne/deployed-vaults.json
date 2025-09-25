@@ -46,5 +46,19 @@
     "USDT": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
     "USDC_e": "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8"
   },
-  "treasury": "0xafA9ed53c33bbD8DE300481ce150dB3D35738F9D"
+  "treasury": "0xafA9ed53c33bbD8DE300481ce150dB3D35738F9D",
+  "chainlinkKeepers": {
+    "keeper1": {
+      "id": "113800582429685404767569226367192451662517607846564551183639170206838992031018",
+      "name": "Vault Rebalancer Keeper",
+      "url": "https://automation.chain.link/arbitrum/113800582429685404767569226367192451662517607846564551183639170206838992031018",
+      "description": "Automated rebalancing keeper for vault operations"
+    },
+    "keeper2": {
+      "id": "26439807876902369158095708471605459198775214043045575483918963607586814307067",
+      "name": "Vault Maintenance Keeper",
+      "url": "https://automation.chain.link/arbitrum/26439807876902369158095708471605459198775214043045575483918963607586814307067",
+      "description": "Maintenance and monitoring keeper for vault health"
+    }
+  }
 }

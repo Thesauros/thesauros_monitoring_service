@@ -106,6 +106,16 @@ app.get('/api/events', async (req, res) => {
   }
 });
 
+app.get('/api/keepers', async (req, res) => {
+  try {
+    const keepers = await getKeeperData();
+    res.json(serializeData(keepers));
+  } catch (error) {
+    console.error('Error fetching keeper data:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/dashboard', async (req, res) => {
   try {
     const dashboardData = {
@@ -113,6 +123,7 @@ app.get('/api/dashboard', async (req, res) => {
       providers: await getProviderData(),
       apyData: await getAPYData(),
       events: await getRecentEvents(),
+      keepers: await getKeeperData(),
       networkInfo: await getNetworkInfo(),
       lastUpdate: new Date().toISOString()
     };
@@ -292,14 +303,67 @@ async function getAPYData() {
   return apyData;
 }
 
+async function getKeeperData() {
+  const keepers = [];
+  
+  if (config && config.chainlinkKeepers) {
+    for (const [key, keeperConfig] of Object.entries(config.chainlinkKeepers)) {
+      try {
+        // Simulate keeper status (in real implementation, you would query Chainlink API)
+        const status = Math.random() > 0.1 ? 'active' : 'paused';
+        const lastRun = new Date(Date.now() - Math.random() * 3600000).toISOString();
+        const balance = (Math.random() * 10 + 0.5).toFixed(4);
+        const totalSpent = (Math.random() * 5 + 0.1).toFixed(4);
+        
+        keepers.push({
+          id: keeperConfig.id,
+          name: keeperConfig.name,
+          description: keeperConfig.description,
+          url: keeperConfig.url,
+          status: status,
+          lastRun: lastRun,
+          balance: balance,
+          totalSpent: totalSpent,
+          gasLimit: '500000',
+          triggerType: 'time-based',
+          network: 'arbitrum',
+          lastUpdate: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error(`Error fetching keeper data for ${key}:`, error);
+        keepers.push({
+          id: keeperConfig.id,
+          name: keeperConfig.name,
+          description: keeperConfig.description,
+          url: keeperConfig.url,
+          status: 'error',
+          error: error.message,
+          lastUpdate: new Date().toISOString()
+        });
+      }
+    }
+  }
+  
+  return keepers;
+}
+
 async function getRecentEvents() {
   return [
     {
       type: 'RebalanceExecuted',
-      vault: 'WETH Vault',
+      vault: 'USDC Vault',
       timestamp: new Date(Date.now() - 3600000).toISOString(),
       txHash: '0x1234...5678',
-      success: true
+      success: true,
+      keeper: 'Vault Rebalancer Keeper'
+    },
+    {
+      type: 'KeeperExecution',
+      vault: 'USDT Vault',
+      timestamp: new Date(Date.now() - 7200000).toISOString(),
+      txHash: '0xabcd...efgh',
+      success: true,
+      keeper: 'Vault Maintenance Keeper'
     }
   ];
 }

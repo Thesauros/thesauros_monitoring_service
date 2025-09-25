@@ -303,6 +303,90 @@
             letter-spacing: 0.5px;
         }
 
+        .keepers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .keeper-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #2196f3;
+        }
+
+        .keeper-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .keeper-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .keeper-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .keeper-status.active {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .keeper-status.paused {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .keeper-status.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .keeper-info {
+            margin-bottom: 1rem;
+        }
+
+        .keeper-info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .keeper-info-label {
+            color: #666;
+        }
+
+        .keeper-info-value {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .keeper-link {
+            display: inline-block;
+            background: #2196f3;
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+
+        .keeper-link:hover {
+            background: #1976d2;
+        }
+
         .events-list {
             background: white;
             border-radius: 12px;
@@ -423,6 +507,7 @@
         <button class="nav-btn" onclick="showTab('vaults')">Vaults</button>
         <button class="nav-btn" onclick="showTab('providers')">Providers</button>
         <button class="nav-btn" onclick="showTab('apy')">APY Analysis</button>
+        <button class="nav-btn" onclick="showTab('keepers')">Chainlink Keepers</button>
         <button class="nav-btn" onclick="showTab('events')">Events</button>
     </nav>
     
@@ -530,6 +615,14 @@
             </div>
         </div>
 
+        <!-- Keepers Tab -->
+        <div id="keepers" class="hidden">
+            <h2 style="margin-bottom: 2rem; color: #333;">Chainlink Automation Keepers</h2>
+            <div id="keepersGrid" class="keepers-grid">
+                <!-- Keepers will be populated here -->
+            </div>
+        </div>
+
         <!-- Events Tab -->
         <div id="events" class="hidden">
             <h2 style="margin-bottom: 2rem; color: #333;">Recent Events</h2>
@@ -544,6 +637,7 @@
             vaults: [],
             providers: [],
             apyData: [],
+            keepers: [],
             events: [],
             networkInfo: {},
             lastUpdate: null
@@ -580,6 +674,9 @@
                     break;
                 case 'apy':
                     updateAPY();
+                    break;
+                case 'keepers':
+                    updateKeepers();
                     break;
                 case 'events':
                     updateEvents();
@@ -770,6 +867,59 @@
                     <div class="apy-source">${apy.source}</div>
                     <div style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">
                         ${apy.address ? `${apy.address.slice(0, 6)}...${apy.address.slice(-4)}` : 'No address'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateKeepers() {
+            const { keepers } = currentData;
+            const grid = document.getElementById('keepersGrid');
+            
+            if (keepers.length === 0) {
+                grid.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #666;">
+                        <h3>No keepers configured</h3>
+                        <p>Chainlink Automation Keepers will appear here when configured.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = keepers.map(keeper => `
+                <div class="keeper-card">
+                    <div class="keeper-header">
+                        <div class="keeper-name">${keeper.name}</div>
+                        <div class="keeper-status ${keeper.status}">${keeper.status}</div>
+                    </div>
+                    <div class="keeper-info">
+                        <div class="keeper-info-item">
+                            <span class="keeper-info-label">ID:</span>
+                            <span class="keeper-info-value">${keeper.id.slice(0, 10)}...</span>
+                        </div>
+                        <div class="keeper-info-item">
+                            <span class="keeper-info-label">Last Run:</span>
+                            <span class="keeper-info-value">${new Date(keeper.lastRun).toLocaleString()}</span>
+                        </div>
+                        <div class="keeper-info-item">
+                            <span class="keeper-info-label">Balance:</span>
+                            <span class="keeper-info-value">${keeper.balance} ETH</span>
+                        </div>
+                        <div class="keeper-info-item">
+                            <span class="keeper-info-label">Total Spent:</span>
+                            <span class="keeper-info-value">${keeper.totalSpent} ETH</span>
+                        </div>
+                        <div class="keeper-info-item">
+                            <span class="keeper-info-label">Gas Limit:</span>
+                            <span class="keeper-info-value">${keeper.gasLimit}</span>
+                        </div>
+                        <div class="keeper-info-item">
+                            <span class="keeper-info-label">Trigger:</span>
+                            <span class="keeper-info-value">${keeper.triggerType}</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <a href="${keeper.url}" target="_blank" class="keeper-link">View on Chainlink</a>
                     </div>
                 </div>
             `).join('');
