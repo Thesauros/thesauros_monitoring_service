@@ -387,6 +387,80 @@
             background: #1976d2;
         }
 
+        .keeper-alerts {
+            margin-bottom: 1rem;
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .alert-item.alert-high {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 3px solid #c62828;
+        }
+
+        .alert-item.alert-medium {
+            background: #fff3e0;
+            color: #f57c00;
+            border-left: 3px solid #f57c00;
+        }
+
+        .alert-item.alert-low {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border-left: 3px solid #2e7d32;
+        }
+
+        .alert-icon {
+            font-size: 1.1rem;
+        }
+
+        .alert-message {
+            flex: 1;
+        }
+
+        .keeper-metrics {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .metric-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .metric-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+        }
+
         .events-list {
             background: white;
             border-radius: 12px;
@@ -892,6 +966,41 @@
                         <div class="keeper-name">${keeper.name}</div>
                         <div class="keeper-status ${keeper.status}">${keeper.status}</div>
                     </div>
+                    
+                    ${keeper.alerts && keeper.alerts.length > 0 ? `
+                        <div class="keeper-alerts">
+                            ${keeper.alerts.map(alert => `
+                                <div class="alert-item alert-${alert.severity}">
+                                    <span class="alert-icon">${getAlertIcon(alert.type)}</span>
+                                    <span class="alert-message">${alert.message}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="keeper-metrics">
+                        <div class="metric-row">
+                            <div class="metric-item">
+                                <div class="metric-label">Uptime</div>
+                                <div class="metric-value">${keeper.uptime || 0}m</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Success Rate</div>
+                                <div class="metric-value">${keeper.successRate || '0'}%</div>
+                            </div>
+                        </div>
+                        <div class="metric-row">
+                            <div class="metric-item">
+                                <div class="metric-label">Performance</div>
+                                <div class="metric-value">${keeper.performance || '0'}%</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Executions</div>
+                                <div class="metric-value">${keeper.executionCount || 0}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="keeper-info">
                         <div class="keeper-info-item">
                             <span class="keeper-info-label">ID:</span>
@@ -899,7 +1008,11 @@
                         </div>
                         <div class="keeper-info-item">
                             <span class="keeper-info-label">Last Run:</span>
-                            <span class="keeper-info-value">${new Date(keeper.lastRun).toLocaleString()}</span>
+                            <span class="keeper-info-value">${keeper.lastRun ? new Date(keeper.lastRun).toLocaleString() : 'Never'}</span>
+                        </div>
+                        <div class="keeper-info-item">
+                            <span class="keeper-info-label">Next Run:</span>
+                            <span class="keeper-info-value">${keeper.nextRun ? new Date(keeper.nextRun).toLocaleString() : 'Unknown'}</span>
                         </div>
                         <div class="keeper-info-item">
                             <span class="keeper-info-label">Balance:</span>
@@ -908,6 +1021,10 @@
                         <div class="keeper-info-item">
                             <span class="keeper-info-label">Total Spent:</span>
                             <span class="keeper-info-value">${keeper.totalSpent} ETH</span>
+                        </div>
+                        <div class="keeper-info-item">
+                            <span class="keeper-info-label">Cost/Execution:</span>
+                            <span class="keeper-info-value">${keeper.costEfficiency || '0'} ETH</span>
                         </div>
                         <div class="keeper-info-item">
                             <span class="keeper-info-label">Gas Limit:</span>
@@ -923,6 +1040,18 @@
                     </div>
                 </div>
             `).join('');
+        }
+        
+        function getAlertIcon(alertType) {
+            const icons = {
+                'low_balance': '💰',
+                'missed_execution': '⏰',
+                'low_success_rate': '📉',
+                'high_cost': '💸',
+                'paused': '⏸️',
+                'error': '❌'
+            };
+            return icons[alertType] || '⚠️';
         }
 
         function updateEvents() {

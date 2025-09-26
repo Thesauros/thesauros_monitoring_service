@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { ethers } = require('ethers');
+const logger = require('./utils/logger');
 require('dotenv').config();
 
 const app = express();
@@ -116,6 +117,35 @@ app.get('/api/keepers', async (req, res) => {
   }
 });
 
+app.get('/api/alerts', async (req, res) => {
+  try {
+    const alerts = await getAllAlerts();
+    res.json(serializeData(alerts));
+  } catch (error) {
+    console.error('Error fetching alerts:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/stats', async (req, res) => {
+  try {
+    const stats = {
+      alerts: logger.getAlertStats(24),
+      system: {
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        version: process.env.npm_package_version || '1.0.0',
+        nodeVersion: process.version
+      },
+      lastUpdate: new Date().toISOString()
+    };
+    res.json(serializeData(stats));
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/dashboard', async (req, res) => {
   try {
     const dashboardData = {
@@ -124,6 +154,7 @@ app.get('/api/dashboard', async (req, res) => {
       apyData: await getAPYData(),
       events: await getRecentEvents(),
       keepers: await getKeeperData(),
+      alerts: await getAllAlerts(),
       networkInfo: await getNetworkInfo(),
       lastUpdate: new Date().toISOString()
     };
@@ -309,28 +340,50 @@ async function getKeeperData() {
   if (config && config.chainlinkKeepers) {
     for (const [key, keeperConfig] of Object.entries(config.chainlinkKeepers)) {
       try {
-        // Simulate keeper status (in real implementation, you would query Chainlink API)
-        const status = Math.random() > 0.1 ? 'active' : 'paused';
-        const lastRun = new Date(Date.now() - Math.random() * 3600000).toISOString();
-        const balance = (Math.random() * 10 + 0.5).toFixed(4);
-        const totalSpent = (Math.random() * 5 + 0.1).toFixed(4);
+        // Fetch real data from Chainlink API
+        const keeperData = await fetchKeeperFromChainlinkAPI(keeperConfig.id);
+        
+        // Calculate additional metrics
+        const metrics = calculateKeeperMetrics(keeperData);
+        
+        // Check for alerts
+        const alerts = checkKeeperAlerts(keeperData, metrics);
         
         keepers.push({
           id: keeperConfig.id,
           name: keeperConfig.name,
           description: keeperConfig.description,
           url: keeperConfig.url,
-          status: status,
-          lastRun: lastRun,
-          balance: balance,
-          totalSpent: totalSpent,
-          gasLimit: '500000',
-          triggerType: 'time-based',
+          status: keeperData.status,
+          lastRun: keeperData.lastRun,
+          nextRun: keeperData.nextRun,
+          balance: keeperData.balance,
+          totalSpent: keeperData.totalSpent,
+          gasLimit: keeperData.gasLimit,
+          gasPrice: keeperData.gasPrice,
+          triggerType: keeperData.triggerType,
           network: 'arbitrum',
+          // New metrics
+          uptime: metrics.uptime,
+          performance: metrics.performance,
+          costEfficiency: metrics.costEfficiency,
+          successRate: metrics.successRate,
+          executionCount: metrics.executionCount,
+          // Alerts
+          alerts: alerts,
           lastUpdate: new Date().toISOString()
         });
       } catch (error) {
         console.error(`Error fetching keeper data for ${key}:`, error);
+        
+        // Log error alert
+        logger.logAlert('KEEPER_ERROR', {
+          keeperId: keeperConfig.id,
+          keeperName: keeperConfig.name,
+          error: error.message,
+          timestamp: new Date().toISOString()
+        });
+        
         keepers.push({
           id: keeperConfig.id,
           name: keeperConfig.name,
@@ -338,6 +391,12 @@ async function getKeeperData() {
           url: keeperConfig.url,
           status: 'error',
           error: error.message,
+          alerts: [{
+            type: 'error',
+            message: `Failed to fetch data: ${error.message}`,
+            severity: 'high',
+            timestamp: new Date().toISOString()
+          }],
           lastUpdate: new Date().toISOString()
         });
       }
@@ -401,6 +460,194 @@ function getTokenDecimals(token) {
   return decimals[token] || 18;
 }
 
+// Chainlink API integration
+async function fetchKeeperFromChainlinkAPI(keeperId) {
+  const chainlinkApiKey = process.env.CHAINLINK_API_KEY;
+  const chainlinkApiUrl = process.env.CHAINLINK_API_URL || 'https://automation.chain.link/api/v1';
+  
+  if (!chainlinkApiKey) {
+    throw new Error('CHAINLINK_API_KEY not configured');
+  }
+  
+  try {
+    const response = await fetch(`${chainlinkApiUrl}/upkeeps/${keeperId}`, {
+      headers: {
+        'Authorization': `Bearer ${chainlinkApiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Chainlink API error: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    return {
+      status: data.status || 'unknown',
+      lastRun: data.lastRun || null,
+      nextRun: data.nextRun || null,
+      balance: data.balance || '0',
+      totalSpent: data.totalSpent || '0',
+      gasLimit: data.gasLimit || '500000',
+      gasPrice: data.gasPrice || '0',
+      triggerType: data.triggerType || 'time-based',
+      executionCount: data.executionCount || 0,
+      successCount: data.successCount || 0,
+      failureCount: data.failureCount || 0,
+      rawData: data
+    };
+  } catch (error) {
+    console.error(`Failed to fetch keeper data from Chainlink API:`, error);
+    throw error;
+  }
+}
+
+// Calculate keeper metrics
+function calculateKeeperMetrics(keeperData) {
+  const now = new Date();
+  const lastRun = keeperData.lastRun ? new Date(keeperData.lastRun) : null;
+  
+  // Calculate uptime (time since last successful run)
+  let uptime = 0;
+  if (lastRun) {
+    uptime = Math.floor((now - lastRun) / 1000 / 60); // minutes
+  }
+  
+  // Calculate performance (average execution time)
+  const performance = keeperData.executionCount > 0 ? 
+    (keeperData.successCount / keeperData.executionCount) * 100 : 0;
+  
+  // Calculate cost efficiency (cost per successful execution)
+  const costEfficiency = keeperData.successCount > 0 ? 
+    parseFloat(keeperData.totalSpent) / keeperData.successCount : 0;
+  
+  // Calculate success rate
+  const successRate = keeperData.executionCount > 0 ? 
+    (keeperData.successCount / keeperData.executionCount) * 100 : 100;
+  
+  return {
+    uptime: uptime,
+    performance: performance.toFixed(2),
+    costEfficiency: costEfficiency.toFixed(6),
+    successRate: successRate.toFixed(2),
+    executionCount: keeperData.executionCount
+  };
+}
+
+// Check for alerts
+function checkKeeperAlerts(keeperData, metrics) {
+  const alerts = [];
+  const now = new Date();
+  
+  // Low balance alert
+  if (parseFloat(keeperData.balance) < 0.1) {
+    alerts.push({
+      type: 'low_balance',
+      message: `Low balance: ${keeperData.balance} ETH`,
+      severity: 'high',
+      timestamp: now.toISOString()
+    });
+  }
+  
+  // Missed execution alert (no run in last 2 hours)
+  if (keeperData.lastRun) {
+    const lastRun = new Date(keeperData.lastRun);
+    const hoursSinceLastRun = (now - lastRun) / 1000 / 60 / 60;
+    
+    if (hoursSinceLastRun > 2) {
+      alerts.push({
+        type: 'missed_execution',
+        message: `No execution in ${hoursSinceLastRun.toFixed(1)} hours`,
+        severity: 'medium',
+        timestamp: now.toISOString()
+      });
+    }
+  }
+  
+  // Low success rate alert
+  if (parseFloat(metrics.successRate) < 90) {
+    alerts.push({
+      type: 'low_success_rate',
+      message: `Low success rate: ${metrics.successRate}%`,
+      severity: 'medium',
+      timestamp: now.toISOString()
+    });
+  }
+  
+  // High cost efficiency alert
+  if (parseFloat(metrics.costEfficiency) > 0.01) {
+    alerts.push({
+      type: 'high_cost',
+      message: `High cost per execution: ${metrics.costEfficiency} ETH`,
+      severity: 'low',
+      timestamp: now.toISOString()
+    });
+  }
+  
+  // Status alerts
+  if (keeperData.status === 'paused') {
+    alerts.push({
+      type: 'paused',
+      message: 'Keeper is paused',
+      severity: 'high',
+      timestamp: now.toISOString()
+    });
+  }
+  
+  return alerts;
+}
+
+// Alert logging system
+function logAlert(alertType, alertData) {
+  const logEntry = {
+    timestamp: new Date().toISOString(),
+    type: alertType,
+    data: alertData,
+    severity: alertData.severity || 'medium'
+  };
+  
+  // Log to console
+  console.log(`🚨 ALERT [${alertType.toUpperCase()}]:`, JSON.stringify(logEntry, null, 2));
+  
+  // In production, you would also log to:
+  // - File system
+  // - Database
+  // - External monitoring service (DataDog, New Relic, etc.)
+  // - Slack/Discord webhooks
+  // - Email notifications
+}
+
+// Get all alerts
+async function getAllAlerts() {
+  try {
+    const stats = logger.getAlertStats(24); // Last 24 hours
+    const recent = logger.getRecentAlerts(24); // Last 24 hours
+    
+    return {
+      total: stats.total,
+      high: stats.high,
+      medium: stats.medium,
+      low: stats.low,
+      byType: stats.byType,
+      recent: recent.slice(0, 10), // Last 10 alerts
+      lastUpdate: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error fetching alerts:', error);
+    return {
+      total: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
+      byType: {},
+      recent: [],
+      error: error.message,
+      lastUpdate: new Date().toISOString()
+    };
+  }
+}
+
 // Serve simple HTML dashboard
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'simple-dashboard.html'));
@@ -412,9 +659,17 @@ app.get('*', (req, res) => {
 });
 
 initializeProvider().then(() => {
+  // Clean old logs on startup
+  logger.cleanOldLogs();
+  
   app.listen(PORT, () => {
-  console.log(`Monitoring UI server running on port ${PORT}`);
-  console.log(`Dashboard available at http://localhost:${PORT}`);
+    console.log(`🚀 Thesauros Monitoring Service started successfully!`);
+    console.log(`📊 Dashboard: http://localhost:${PORT}`);
+    console.log(`🔗 API Health: http://localhost:${PORT}/api/health`);
+    console.log(`📈 Keepers: http://localhost:${PORT}/api/keepers`);
+    console.log(`🚨 Alerts: http://localhost:${PORT}/api/alerts`);
+    console.log(`📊 Stats: http://localhost:${PORT}/api/stats`);
+    console.log(`⏰ Started at: ${new Date().toISOString()}`);
   });
 }).catch((error) => {
   console.error("Failed to initialize provider:", error);

@@ -1,172 +1,256 @@
-# Thesauros Monitoring UI
+# Thesauros Monitoring Service
 
-A simple web application for monitoring the Thesauros DeFi protocol on Arbitrum One.
+Мониторинг сервис для отслеживания состояния вольтов, провайдеров и Chainlink Automation Keepers в сети Arbitrum.
 
-## 🚀 Quick Start
+## 🚀 Возможности
 
-Open your browser and navigate to http://5.161.205.208
-Thesauros Monitoring Dashboard
-API is available at http://5.161.205.208/api/health
+### 📊 Vault Monitoring
+- **TVL Tracking** - отслеживание общей заблокированной стоимости
+- **Real-time APY** - живые данные APY из смарт-контрактов
+- **Provider Analytics** - анализ активных провайдеров
+- **Asset Management** - управление активами вольтов
 
-### Local Development
+### ⚡ Chainlink Automation Keepers
+- **Real-time Status** - статус keepers в реальном времени
+- **Performance Metrics** - метрики производительности
+- **Cost Analysis** - анализ стоимости выполнения
+- **Alert System** - система алертов с логированием
 
-#### Restart Nginx
-systemctl restart nginx
+### 🚨 Alert System
+- **Low Balance** - низкий баланс keeper'а
+- **Missed Execution** - пропущенные выполнения
+- **Low Success Rate** - низкий процент успешности
+- **High Cost** - высокая стоимость выполнения
+- **Status Changes** - изменения статуса
 
-#### View Nginx logs
-tail -f /var/log/nginx/access.log
-tail -f /var/log/nginx/error.log
+## 🔧 Установка и настройка
 
-#### Restart application
-docker-compose restart
-
-#### View application logs
-docker-compose logs -f
-
+### 1. Установка зависимостей
 ```bash
-# Install dependencies
-npm install
-
-# Run in development mode
-npm run dev
-
-# Application will be available at http://localhost:3001
-```
-
-### Hetzner Deployment
-
-For deployment on Hetzner Cloud, use one of the following options:
-
-#### Option 1: Manual deployment (recommended for beginners)
-
-```bash
-chmod +x manual-deploy.sh
-./manual-deploy.sh
-```
-
-#### Option 2: Automatic deployment
-
-```bash
-chmod +x deploy-hetzner.sh
-./deploy-hetzner.sh
-```
-
-📖 **Detailed guide**: [HETZNER_DEPLOYMENT.md](HETZNER_DEPLOYMENT.md)
-
-## 📋 Features
-
-- **Vault Monitoring**: Track TVL, active providers
-- **APY Analysis**: Show yields for various tokens
-- **Events**: Display recent transactions
-- **Network Status**: Information about Arbitrum One blockchain
-- **Responsive UI**: Adaptive interface for all devices
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Backend API   │    │  Arbitrum One   │
-│   (HTML/CSS/JS) │◄──►│   (Express.js)  │◄──►│   (Ethers.js)   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-## 🔧 Technologies
-
-- **Backend**: Node.js, Express.js
-- **Frontend**: Vanilla HTML/CSS/JavaScript
-- **Blockchain**: Ethers.js for Arbitrum One interaction
-- **Deployment**: Docker, Docker Compose, Nginx
-- **Infrastructure**: Hetzner Cloud
-
-## 📁 Project Structure
-
-```
-monitoring-ui/
-├── server.js              # Express server
-├── simple-dashboard.html  # Frontend interface
-├── package.json           # Node.js dependencies
-├── Dockerfile            # Docker image
-├── docker-compose.yml    # Docker Compose configuration
-├── deploy-hetzner.sh     # Automatic deployment
-├── manual-deploy.sh      # Manual deployment
-└── deployments/          # Contract configuration
-    └── arbitrumOne/
-        └── deployed-vaults.json
-```
-
-## 🌐 API Endpoints
-
-- `GET /api/health` - Server health check
-- `GET /api/vaults` - Vault data
-- `GET /api/providers` - Provider data
-- `GET /api/apy` - APY data
-- `GET /api/events` - Recent events
-- `GET /api/dashboard` - All dashboard data
-
-## 🔒 Security
-
-- Rate limiting for API
-- CORS settings
-- Helmet.js for security headers
-- UFW firewall on server
-- SSL/HTTPS through Let's Encrypt
-
-## 💰 Hosting Cost
-
-- **Hetzner CX11**: ~€5/month (2 vCPU, 2GB RAM)
-- **Hetzner CX21**: ~€10/month (3 vCPU, 4GB RAM)
-
-## 🚨 Troubleshooting
-
-### Local Development
-
-```bash
-# Check ports
-lsof -i :3001
-
-# Clean node_modules
-rm -rf node_modules package-lock.json
 npm install
 ```
 
-### Production
-
+### 2. Настройка переменных окружения
+Скопируйте `env.example` в `.env` и заполните:
 ```bash
-# Check logs
-docker-compose logs -f
-
-# Restart application
-docker-compose restart
-
-# Check status
-docker-compose ps
+cp env.example .env
 ```
 
-## 📞 Support
+Обязательные переменные:
+```env
+# Chainlink API Configuration
+CHAINLINK_API_KEY=your_chainlink_api_key_here
+CHAINLINK_API_URL=https://automation.chain.link/api/v1
 
-If you encounter problems:
+# Arbitrum RPC Configuration
+ARBITRUM_ONE_RPC_URL=https://arb1.arbitrum.io/rpc
 
-1. Check logs: `docker-compose logs`
-2. Ensure all ports are open
-3. Check DNS settings (if using domain)
-4. Refer to [HETZNER_DEPLOYMENT.md](HETZNER_DEPLOYMENT.md)
+# Server Configuration
+PORT=3001
+```
 
-## 🔄 Updates
+### 3. Получение Chainlink API ключа
+1. Зайдите на [Chainlink Automation](https://automation.chain.link/)
+2. Создайте аккаунт или войдите
+3. Перейдите в раздел API Keys
+4. Создайте новый API ключ
+5. Скопируйте ключ в `.env` файл
 
+### 4. Запуск сервиса
+
+#### Локальный запуск
 ```bash
-# Locally
+npm start
+```
+
+#### Запуск с PM2 (рекомендуется)
+```bash
+# Установка PM2
+npm install -g pm2
+
+# Запуск
+pm2 start server.js --name thesauros-monitoring
+
+# Автозапуск
+pm2 startup
+pm2 save
+```
+
+## 📡 API Endpoints
+
+### Основные endpoints
+- `GET /` - Dashboard интерфейс
+- `GET /api/health` - Статус сервиса
+- `GET /api/dashboard` - Все данные для dashboard
+
+### Специализированные endpoints
+- `GET /api/vaults` - Данные вольтов
+- `GET /api/providers` - Данные провайдеров
+- `GET /api/apy` - APY данные
+- `GET /api/keepers` - Данные Chainlink Keepers
+- `GET /api/alerts` - Система алертов
+- `GET /api/events` - Последние события
+
+## 📊 Dashboard
+
+### Вкладки
+1. **Dashboard** - общий обзор
+2. **Vaults** - детали вольтов
+3. **Providers** - статус провайдеров
+4. **APY Analysis** - анализ доходности
+5. **Chainlink Keepers** - мониторинг keepers
+6. **Events** - последние события
+
+### Метрики Keepers
+- **Uptime** - время работы без сбоев
+- **Success Rate** - процент успешных выполнений
+- **Performance** - общая производительность
+- **Execution Count** - количество выполнений
+- **Cost Efficiency** - стоимость за выполнение
+
+## 🚨 Система алертов
+
+### Типы алертов
+- **High Severity** 🔴
+  - Low Balance (< 0.1 ETH)
+  - Keeper Paused
+  - API Errors
+
+- **Medium Severity** 🟡
+  - Missed Execution (> 2 hours)
+  - Low Success Rate (< 90%)
+
+- **Low Severity** 🟢
+  - High Cost per Execution (> 0.01 ETH)
+
+### Логирование
+Алерты логируются в консоль в формате:
+```json
+{
+  "timestamp": "2025-01-27T10:30:00.000Z",
+  "type": "LOW_BALANCE",
+  "data": {
+    "keeperId": "113800582429685404767569226367192451662517607846564551183639170206838992031018",
+    "keeperName": "Vault Rebalancer Keeper",
+    "balance": "0.05",
+    "severity": "high"
+  }
+}
+```
+
+## 🔧 Конфигурация
+
+### Keepers Configuration
+В файле `deployments/arbitrumOne/deployed-vaults.json`:
+```json
+{
+  "chainlinkKeepers": {
+    "keeper1": {
+      "id": "113800582429685404767569226367192451662517607846564551183639170206838992031018",
+      "name": "Vault Rebalancer Keeper",
+      "url": "https://automation.chain.link/arbitrum/...",
+      "description": "Automated rebalancing keeper for vault operations"
+    }
+  }
+}
+```
+
+### Alert Thresholds
+Настраиваемые пороги в `.env`:
+```env
+LOW_BALANCE_THRESHOLD=0.1
+MISSED_EXECUTION_THRESHOLD_HOURS=2
+LOW_SUCCESS_RATE_THRESHOLD=90
+HIGH_COST_THRESHOLD=0.01
+```
+
+## 🛠️ Разработка
+
+### Структура проекта
+```
+thesauros_monitoring_service/
+├── server.js                 # Основной сервер
+├── simple-dashboard.html     # Dashboard интерфейс
+├── deployments/              # Конфигурация контрактов
+│   └── arbitrumOne/
+│       └── deployed-vaults.json
+├── env.example              # Пример переменных окружения
+├── package.json             # Зависимости
+└── README.md               # Документация
+```
+
+### Добавление новых метрик
+1. Обновите функцию `calculateKeeperMetrics()`
+2. Добавьте новые поля в `getKeeperData()`
+3. Обновите UI в `updateKeepers()`
+
+### Добавление новых алертов
+1. Добавьте проверку в `checkKeeperAlerts()`
+2. Обновите `getAlertIcon()` для новых типов
+3. Добавьте CSS стили для новых severity уровней
+
+## 📈 Мониторинг
+
+### Health Checks
+- `GET /api/health` - проверка статуса сервиса
+- Автоматические проверки каждые 30 секунд
+- Логирование ошибок в консоль
+
+### Performance
+- Кэширование данных на 30 секунд
+- Параллельные запросы к API
+- Graceful error handling
+
+## 🔒 Безопасность
+
+- API ключи хранятся в переменных окружения
+- Нет прямого доступа к приватным ключам
+- CORS настроен для безопасного доступа
+- Валидация всех входящих данных
+
+## 📞 Поддержка
+
+При возникновении проблем:
+1. Проверьте логи: `pm2 logs thesauros-monitoring`
+2. Убедитесь в правильности API ключей
+3. Проверьте доступность RPC endpoints
+4. Проверьте конфигурацию keepers
+
+## 🚀 Деплой
+
+### На удаленном сервере
+```bash
+# Клонирование репозитория
+git clone <repository-url>
+cd thesauros_monitoring_service
+
+# Установка зависимостей
+npm install
+
+# Настройка переменных окружения
+cp env.example .env
+# Отредактируйте .env файл
+
+# Запуск с PM2
+pm2 start server.js --name thesauros-monitoring
+pm2 startup
+pm2 save
+```
+
+### Обновление
+```bash
+# Остановка сервиса
+pm2 stop thesauros-monitoring
+
+# Обновление кода
 git pull
-npm install
-npm run dev
 
-# On server
-ssh root@SERVER_IP
-cd /opt/thesauros-monitoring
-git pull
-docker-compose down
-docker-compose up -d --build
+# Перезапуск
+pm2 restart thesauros-monitoring
 ```
 
 ---
 
-**Created by Thesauros Team** 🚀
+**Версия**: 1.0.0  
+**Сеть**: Arbitrum One  
+**Последнее обновление**: 2025-01-27
