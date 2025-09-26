@@ -940,7 +940,8 @@
                     <div class="apy-value">${parseFloat(apy.apy).toFixed(4)}%</div>
                     <div class="apy-source">${apy.source}</div>
                     <div style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">
-                        ${apy.address ? `${apy.address.slice(0, 6)}...${apy.address.slice(-4)}` : 'No address'}
+                        <div>Vault: ${apy.vaultAddress ? `${apy.vaultAddress.slice(0, 6)}...${apy.vaultAddress.slice(-4)}` : 'No address'}</div>
+                        <div>Provider: ${apy.provider || 'Unknown'}</div>
                     </div>
                 </div>
             `).join('');
