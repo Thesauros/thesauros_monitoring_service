@@ -38,6 +38,10 @@
     "CompoundV3Provider": {
       "address": "0xaBD932E0Fff6417a4Af16431d8D86a4e62d62fA3",
       "status": "deployed-verified"
+    },
+    "DolomiteProvider": {
+      "address": "0x3D036B97482CC6c42753dA51917B3302D5d0E9AE",
+      "status": "deployed-verified"
     }
   },
   "tokenAddresses": {
