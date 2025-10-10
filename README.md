@@ -1,6 +1,6 @@
 # Thesauros Monitoring Service
 
-Мониторинг сервис для отслеживания состояния вольтов, провайдеров и Chainlink Automation Keepers в сети Arbitrum.
+Мониторинг сервис для отслеживания состояния вольтов и провайдеров в сети Arbitrum.
 
 ## 🚀 Возможности
 
@@ -10,18 +10,10 @@
 - **Provider Analytics** - анализ активных провайдеров
 - **Asset Management** - управление активами вольтов
 
-### ⚡ Chainlink Automation Keepers
-- **Real-time Status** - статус keepers в реальном времени
-- **Performance Metrics** - метрики производительности
-- **Cost Analysis** - анализ стоимости выполнения
-- **Alert System** - система алертов с логированием
-
 ### 🚨 Alert System
-- **Low Balance** - низкий баланс keeper'а
-- **Missed Execution** - пропущенные выполнения
-- **Low Success Rate** - низкий процент успешности
-- **High Cost** - высокая стоимость выполнения
-- **Status Changes** - изменения статуса
+- **System Monitoring** - мониторинг системы
+- **Error Tracking** - отслеживание ошибок
+- **Performance Alerts** - алерты производительности
 
 ## 🔧 Установка и настройка
 
@@ -38,9 +30,6 @@ cp env.example .env
 
 Обязательные переменные:
 ```env
-# Chainlink API Configuration
-CHAINLINK_API_KEY=your_chainlink_api_key_here
-CHAINLINK_API_URL=https://automation.chain.link/api/v1
 
 # Arbitrum RPC Configuration
 ARBITRUM_ONE_RPC_URL=https://arb1.arbitrum.io/rpc
@@ -49,14 +38,7 @@ ARBITRUM_ONE_RPC_URL=https://arb1.arbitrum.io/rpc
 PORT=3001
 ```
 
-### 3. Получение Chainlink API ключа
-1. Зайдите на [Chainlink Automation](https://automation.chain.link/)
-2. Создайте аккаунт или войдите
-3. Перейдите в раздел API Keys
-4. Создайте новый API ключ
-5. Скопируйте ключ в `.env` файл
-
-### 4. Запуск сервиса
+### 3. Запуск сервиса
 
 #### Локальный запуск
 ```bash
@@ -87,7 +69,6 @@ pm2 save
 - `GET /api/vaults` - Данные вольтов
 - `GET /api/providers` - Данные провайдеров
 - `GET /api/apy` - APY данные
-- `GET /api/keepers` - Данные Chainlink Keepers
 - `GET /api/alerts` - Система алертов
 - `GET /api/events` - Последние события
 
@@ -98,30 +79,21 @@ pm2 save
 2. **Vaults** - детали вольтов
 3. **Providers** - статус провайдеров
 4. **APY Analysis** - анализ доходности
-5. **Chainlink Keepers** - мониторинг keepers
 6. **Events** - последние события
 
-### Метрики Keepers
-- **Uptime** - время работы без сбоев
-- **Success Rate** - процент успешных выполнений
-- **Performance** - общая производительность
-- **Execution Count** - количество выполнений
-- **Cost Efficiency** - стоимость за выполнение
 
 ## 🚨 Система алертов
 
 ### Типы алертов
 - **High Severity** 🔴
-  - Low Balance (< 0.1 ETH)
-  - Keeper Paused
+  - System Errors
   - API Errors
 
 - **Medium Severity** 🟡
-  - Missed Execution (> 2 hours)
-  - Low Success Rate (< 90%)
+  - Performance Issues
 
 - **Low Severity** 🟢
-  - High Cost per Execution (> 0.01 ETH)
+  - General Warnings
 
 ### Логирование
 Алерты логируются в консоль в формате:
@@ -140,28 +112,11 @@ pm2 save
 
 ## 🔧 Конфигурация
 
-### Keepers Configuration
-В файле `deployments/arbitrumOne/deployed-vaults.json`:
-```json
-{
-  "chainlinkKeepers": {
-    "keeper1": {
-      "id": "113800582429685404767569226367192451662517607846564551183639170206838992031018",
-      "name": "Vault Rebalancer Keeper",
-      "url": "https://automation.chain.link/arbitrum/...",
-      "description": "Automated rebalancing keeper for vault operations"
-    }
-  }
-}
-```
-
 ### Alert Thresholds
 Настраиваемые пороги в `.env`:
 ```env
-LOW_BALANCE_THRESHOLD=0.1
-MISSED_EXECUTION_THRESHOLD_HOURS=2
-LOW_SUCCESS_RATE_THRESHOLD=90
-HIGH_COST_THRESHOLD=0.01
+LOG_LEVEL=info
+ALERT_LOG_FILE=./logs/alerts.log
 ```
 
 ## 🛠️ Разработка

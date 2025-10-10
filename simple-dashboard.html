@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Thesauros Monitoring Dashboard</title>
     <style>
         * {
@@ -303,93 +306,6 @@
             letter-spacing: 0.5px;
         }
 
-        .keepers-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .keeper-card {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-left: 4px solid #2196f3;
-        }
-
-        .keeper-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .keeper-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .keeper-status {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .keeper-status.active {
-            background: #e8f5e8;
-            color: #2e7d32;
-        }
-
-        .keeper-status.paused {
-            background: #fff3e0;
-            color: #f57c00;
-        }
-
-        .keeper-status.error {
-            background: #ffebee;
-            color: #c62828;
-        }
-
-        .keeper-info {
-            margin-bottom: 1rem;
-        }
-
-        .keeper-info-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-        }
-
-        .keeper-info-label {
-            color: #666;
-        }
-
-        .keeper-info-value {
-            color: #333;
-            font-weight: 500;
-        }
-
-        .keeper-link {
-            display: inline-block;
-            background: #2196f3;
-            color: white;
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            transition: background 0.3s;
-        }
-
-        .keeper-link:hover {
-            background: #1976d2;
-        }
-
-        .keeper-alerts {
-            margin-bottom: 1rem;
-        }
 
         .alert-item {
             display: flex;
@@ -427,12 +343,6 @@
             flex: 1;
         }
 
-        .keeper-metrics {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
 
         .metric-row {
             display: flex;
@@ -573,6 +483,9 @@
             <div class="last-update" id="lastUpdate">
                 Last update: Never
             </div>
+            <div class="last-update" id="refreshStatus" style="color: rgba(255,255,255,0.9); font-size: 0.8rem;">
+                Auto-refresh: 10s
+            </div>
         </div>
     </header>
     
@@ -581,7 +494,6 @@
         <button class="nav-btn" onclick="showTab('vaults')">Vaults</button>
         <button class="nav-btn" onclick="showTab('providers')">Providers</button>
         <button class="nav-btn" onclick="showTab('apy')">APY Analysis</button>
-        <button class="nav-btn" onclick="showTab('keepers')">Chainlink Keepers</button>
         <button class="nav-btn" onclick="showTab('events')">Events</button>
     </nav>
     
@@ -640,8 +552,8 @@
                     <span class="metric-value success" id="activeProviders">0</span>
                 </div>
                 <div class="metric">
-                    <span class="metric-label">Total Balance</span>
-                    <span class="metric-value" id="totalBalance">0.000000 ETH</span>
+                    <span class="metric-label">Average Deposit Rate</span>
+                    <span class="metric-value" id="totalBalance">0.0000%</span>
                 </div>
                 <div class="metric">
                     <span class="metric-label">Recent Events</span>
@@ -654,6 +566,9 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                     <button onclick="refreshData()" style="background: #667eea; color: white; border: none; padding: 1rem; border-radius: 8px; cursor: pointer; font-size: 1rem;">
                         Refresh Data
+                    </button>
+                    <button onclick="forceRefresh()" style="background: #f44336; color: white; border: none; padding: 1rem; border-radius: 8px; cursor: pointer; font-size: 1rem;">
+                        Force Refresh
                     </button>
                     <button onclick="window.open('https://arbiscan.io', '_blank')" style="background: #4caf50; color: white; border: none; padding: 1rem; border-radius: 8px; cursor: pointer; font-size: 1rem;">
                         View on Arbiscan
@@ -689,14 +604,6 @@
             </div>
         </div>
 
-        <!-- Keepers Tab -->
-        <div id="keepers" class="hidden">
-            <h2 style="margin-bottom: 2rem; color: #333;">Chainlink Automation Keepers</h2>
-            <div id="keepersGrid" class="keepers-grid">
-                <!-- Keepers will be populated here -->
-            </div>
-        </div>
-
         <!-- Events Tab -->
         <div id="events" class="hidden">
             <h2 style="margin-bottom: 2rem; color: #333;">Recent Events</h2>
@@ -711,7 +618,6 @@
             vaults: [],
             providers: [],
             apyData: [],
-            keepers: [],
             events: [],
             networkInfo: {},
             lastUpdate: null
@@ -749,9 +655,6 @@
                 case 'apy':
                     updateAPY();
                     break;
-                case 'keepers':
-                    updateKeepers();
-                    break;
                 case 'events':
                     updateEvents();
                     break;
@@ -765,7 +668,9 @@
                 showLoading(true);
                 showError(false);
 
-                const response = await fetch('/api/dashboard');
+                // Add cache busting parameter
+                const timestamp = new Date().getTime();
+                const response = await fetch(`/api/dashboard?t=${timestamp}`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -792,6 +697,22 @@
         }
 
         function refreshData() {
+            console.log('Manual refresh triggered');
+            fetchData();
+        }
+
+        // Force refresh function
+        function forceRefresh() {
+            console.log('Force refresh triggered');
+            // Clear any cached data
+            currentData = {
+                vaults: [],
+                providers: [],
+                apyData: [],
+                events: [],
+                networkInfo: {},
+                lastUpdate: null
+            };
             fetchData();
         }
 
@@ -805,6 +726,10 @@
             
             const updateTime = lastUpdate ? new Date(lastUpdate).toLocaleTimeString() : 'Never';
             document.getElementById('lastUpdate').textContent = `Last update: ${updateTime}`;
+            
+            // Update refresh status
+            const now = new Date();
+            document.getElementById('refreshStatus').textContent = `Auto-refresh: 10s | Current time: ${now.toLocaleTimeString()}`;
         }
 
         function updateDashboard() {
@@ -827,12 +752,19 @@
 
             // Calculate provider stats
             const activeProviders = providers.filter(p => p.status !== 'error').length;
-            const totalBalance = providers.reduce((sum, provider) => {
-                if (provider.balance && !isNaN(parseFloat(provider.balance))) {
-                    return sum + parseFloat(provider.balance);
+            let totalDepositRate = 0;
+            let rateCount = 0;
+            
+            providers.forEach(provider => {
+                if (provider.depositRates) {
+                    Object.values(provider.depositRates).forEach(rate => {
+                        if (!isNaN(parseFloat(rate))) {
+                            totalDepositRate += parseFloat(rate);
+                            rateCount++;
+                        }
+                    });
                 }
-                return sum;
-            }, 0);
+            });
 
             // Update dashboard metrics
             document.getElementById('totalTVL').textContent = `$${totalTVL.toFixed(2)}`;
@@ -849,7 +781,7 @@
             document.getElementById('lowestAPY').textContent = `${lowestAPY.toFixed(4)}%`;
 
             document.getElementById('activeProviders').textContent = activeProviders;
-            document.getElementById('totalBalance').textContent = `${totalBalance.toFixed(6)} ETH`;
+            document.getElementById('totalBalance').textContent = `${(totalDepositRate / rateCount || 0).toFixed(4)}%`;
             document.getElementById('recentEvents').textContent = events.length;
         }
 
@@ -904,8 +836,8 @@
                 <div class="provider-card ${provider.error ? 'error' : ''}">
                     <div class="vault-header">
                         <div class="vault-name">${provider.name}</div>
-                        <span class="metric-value ${provider.status === 'deployed-verified' ? 'success' : 'error'}">
-                            ${provider.status === 'deployed-verified' ? 'Active' : provider.status}
+                        <span class="metric-value ${provider.status === 'active' ? 'success' : 'error'}">
+                            ${provider.status === 'active' ? 'Active' : provider.status}
                         </span>
                     </div>
                     
@@ -914,12 +846,14 @@
                     ${provider.error ? 
                         `<div style="color: #f44336; font-size: 0.9rem;">Error: ${provider.error}</div>` :
                         `<div>
-                            <div class="metric">
-                                <span class="metric-label">Balance</span>
-                                <span class="metric-value success">
-                                    ${provider.balance ? `${parseFloat(provider.balance).toFixed(6)} ETH` : '0.000000 ETH'}
-                                </span>
-                            </div>
+                            ${provider.depositRates ? Object.entries(provider.depositRates).map(([token, rate]) => `
+                                <div class="metric">
+                                    <span class="metric-label">getDepositRate(${token} Vault)</span>
+                                    <span class="metric-value success">
+                                        ${parseFloat(rate).toFixed(4)}%
+                                    </span>
+                                </div>
+                            `).join('') : ''}
                             <div class="metric">
                                 <span class="metric-label">Status</span>
                                 <span class="metric-value success">Active</span>
@@ -946,103 +880,6 @@
                 </div>
             `).join('');
         }
-
-        function updateKeepers() {
-            const { keepers } = currentData;
-            const grid = document.getElementById('keepersGrid');
-            
-            if (keepers.length === 0) {
-                grid.innerHTML = `
-                    <div style="text-align: center; padding: 2rem; color: #666;">
-                        <h3>No keepers configured</h3>
-                        <p>Chainlink Automation Keepers will appear here when configured.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            grid.innerHTML = keepers.map(keeper => `
-                <div class="keeper-card">
-                    <div class="keeper-header">
-                        <div class="keeper-name">${keeper.name}</div>
-                        <div class="keeper-status ${keeper.status}">${keeper.status}</div>
-                    </div>
-                    
-                    ${keeper.alerts && keeper.alerts.length > 0 ? `
-                        <div class="keeper-alerts">
-                            ${keeper.alerts.map(alert => `
-                                <div class="alert-item alert-${alert.severity}">
-                                    <span class="alert-icon">${getAlertIcon(alert.type)}</span>
-                                    <span class="alert-message">${alert.message}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : ''}
-                    
-                    <div class="keeper-metrics">
-                        <div class="metric-row">
-                            <div class="metric-item">
-                                <div class="metric-label">Uptime</div>
-                                <div class="metric-value">${keeper.uptime || 0}m</div>
-                            </div>
-                            <div class="metric-item">
-                                <div class="metric-label">Success Rate</div>
-                                <div class="metric-value">${keeper.successRate || '0'}%</div>
-                            </div>
-                        </div>
-                        <div class="metric-row">
-                            <div class="metric-item">
-                                <div class="metric-label">Performance</div>
-                                <div class="metric-value">${keeper.performance || '0'}%</div>
-                            </div>
-                            <div class="metric-item">
-                                <div class="metric-label">Executions</div>
-                                <div class="metric-value">${keeper.executionCount || 0}</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="keeper-info">
-                        <div class="keeper-info-item">
-                            <span class="keeper-info-label">ID:</span>
-                            <span class="keeper-info-value">${keeper.id.slice(0, 10)}...</span>
-                        </div>
-                        <div class="keeper-info-item">
-                            <span class="keeper-info-label">Last Run:</span>
-                            <span class="keeper-info-value">${keeper.lastRun ? new Date(keeper.lastRun).toLocaleString() : 'Never'}</span>
-                        </div>
-                        <div class="keeper-info-item">
-                            <span class="keeper-info-label">Next Run:</span>
-                            <span class="keeper-info-value">${keeper.nextRun ? new Date(keeper.nextRun).toLocaleString() : 'Unknown'}</span>
-                        </div>
-                        <div class="keeper-info-item">
-                            <span class="keeper-info-label">Balance:</span>
-                            <span class="keeper-info-value">${keeper.balance} ETH</span>
-                        </div>
-                        <div class="keeper-info-item">
-                            <span class="keeper-info-label">Total Spent:</span>
-                            <span class="keeper-info-value">${keeper.totalSpent} ETH</span>
-                        </div>
-                        <div class="keeper-info-item">
-                            <span class="keeper-info-label">Cost/Execution:</span>
-                            <span class="keeper-info-value">${keeper.costEfficiency || '0'} ETH</span>
-                        </div>
-                        <div class="keeper-info-item">
-                            <span class="keeper-info-label">Gas Limit:</span>
-                            <span class="keeper-info-value">${keeper.gasLimit}</span>
-                        </div>
-                        <div class="keeper-info-item">
-                            <span class="keeper-info-label">Trigger:</span>
-                            <span class="keeper-info-value">${keeper.triggerType}</span>
-                        </div>
-                    </div>
-                    <div style="margin-top: 1rem;">
-                        <a href="${keeper.url}" target="_blank" class="keeper-link">View on Chainlink</a>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
         function getAlertIcon(alertType) {
             const icons = {
                 'low_balance': '💰',
@@ -1101,6 +938,7 @@
             const providerNames = {
                 '0xE1Cfb1BDb3901dcEe9F21146c1F299c775d9B65C': 'AaveV3Provider',
                 '0x4382190FDbf4befA016Ea412f34eb54593312aD5': 'CompoundV3Provider',
+                '0x3D036B97482CC6c42753dA51917B3302D5d0E9AE': 'DolomiteProvider',
                 '0x2a8b5c1d089c224ddaBA3a1D7C00c2788642D80E': 'EthenaProvider'
             };
             return providerNames[address] || 'Unknown Provider';
@@ -1123,28 +961,8 @@
 
         // WebSocket connection
         function setupWebSocket() {
-            const ws = new WebSocket('ws://localhost:8080');
-            
-            ws.onopen = () => {
-                console.log('WebSocket connected');
-            };
-            
-            ws.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                if (message.type === 'update') {
-                    currentData = message.data;
-                    updateNetworkInfo();
-                    updateDashboard();
-                }
-            };
-            
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-            };
-            
-            ws.onclose = () => {
-                console.log('WebSocket disconnected');
-            };
+            // For now, we'll use polling instead of WebSocket since the server doesn't have WebSocket support
+            console.log('Using polling for real-time updates');
         }
 
         // Initialize
@@ -1152,8 +970,8 @@
             fetchData();
             setupWebSocket();
             
-            // Refresh data every 30 seconds
-            setInterval(fetchData, 30000);
+            // Refresh data every 10 seconds for more frequent updates
+            setInterval(fetchData, 10000);
         });
     </script>
 </body>
