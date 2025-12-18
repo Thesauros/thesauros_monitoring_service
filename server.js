@@ -336,14 +336,18 @@ async function getProviderData() {
           'function getIdentifier() view returns (string memory)'
         ], provider);
         
-        let providerIdentifier = name;
+        let providerIdentifier = formatProviderName(name);
         let depositRates = {};
         
-        // Get provider identifier first
+        // Get provider identifier from contract first, fallback to formatted name from config
         try {
-          providerIdentifier = await providerContract.getIdentifier();
+          const contractIdentifier = await providerContract.getIdentifier();
+          if (contractIdentifier && contractIdentifier.trim() !== '') {
+            providerIdentifier = contractIdentifier;
+          }
         } catch (idError) {
           console.error(`Error fetching identifier for ${name}:`, idError);
+          // Use formatted name from config key as fallback
         }
         
         // Get deposit rates for all available vaults
@@ -502,6 +506,42 @@ function getTokenDecimals(token) {
     'USDC_e': 6
   };
   return decimals[token] || 18;
+}
+
+// Format provider name from config key to readable format
+function formatProviderName(name) {
+  // Remove 'Provider' suffix if present
+  let formatted = name.replace(/Provider$/i, '');
+  
+  // Convert camelCase to Title Case with spaces
+  formatted = formatted.replace(/([A-Z])/g, ' $1').trim();
+  
+  // Handle special cases
+  const specialCases = {
+    'aave V3': 'Aave V3',
+    'compound V3': 'Compound V3',
+    're7 Morpho': 'RE7 Morpho',
+    'steakhouse High Yield Morpho': 'Steakhouse High Yield Morpho',
+    'steakhouse Prime Morpho': 'Steakhouse Prime Morpho',
+    'gauntlet Core Morpho': 'Gauntlet Core Morpho',
+    'dolomite': 'Dolomite',
+    'morpho': 'Morpho'
+  };
+  
+  // Apply special cases
+  for (const [key, value] of Object.entries(specialCases)) {
+    if (formatted.toLowerCase().includes(key.toLowerCase())) {
+      formatted = formatted.replace(new RegExp(key, 'i'), value);
+      break;
+    }
+  }
+  
+  // Capitalize first letter of each word
+  formatted = formatted.split(' ').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  ).join(' ');
+  
+  return formatted || name;
 }
 
 
