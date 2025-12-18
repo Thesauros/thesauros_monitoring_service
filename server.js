@@ -25,7 +25,7 @@ const NETWORKS = {
   base: {
     name: 'Base',
     chainId: 8453,
-    rpcUrl: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
+    rpcUrl: process.env.BASE_RPC_URL || 'https://speedy-nodes-nyc.moralis.io/YOUR_API_KEY/base/mainnet',
     configPath: path.join(__dirname, 'deployments', 'base', 'deployed-vaults.json'),
     explorer: 'https://basescan.org'
   }
