@@ -495,6 +495,13 @@
         <button class="nav-btn" onclick="showTab('providers')">Providers</button>
         <button class="nav-btn" onclick="showTab('apy')">APY Analysis</button>
         <button class="nav-btn" onclick="showTab('events')">Events</button>
+        <div style="margin-left: auto; display: flex; align-items: center; gap: 0.5rem;">
+            <label for="networkSelect" style="color: #666; font-size: 0.9rem;">Network:</label>
+            <select id="networkSelect" onchange="switchNetwork(this.value)" style="padding: 0.5rem 1rem; border: 1px solid #e0e0e0; border-radius: 4px; background: white; color: #333; cursor: pointer; font-size: 0.9rem;">
+                <option value="arbitrumOne">Arbitrum One</option>
+                <option value="base">Base</option>
+            </select>
+        </div>
     </nav>
     
     <main class="main">
@@ -615,6 +622,8 @@
 
     <script>
         let currentData = {
+            network: 'arbitrumOne',
+            networkName: 'Arbitrum One',
             vaults: [],
             providers: [],
             apyData: [],
@@ -622,6 +631,8 @@
             networkInfo: {},
             lastUpdate: null
         };
+        
+        let availableNetworks = [];
 
         // Tab switching
         function showTab(tabName) {
@@ -661,6 +672,56 @@
             }
         }
 
+        // Network management
+        async function loadNetworks() {
+            try {
+                const response = await fetch('/api/networks');
+                if (response.ok) {
+                    availableNetworks = await response.json();
+                    updateNetworkSelector();
+                }
+            } catch (error) {
+                console.error('Error loading networks:', error);
+            }
+        }
+        
+        async function switchNetwork(networkKey) {
+            try {
+                showLoading(true);
+                const response = await fetch('/api/network/switch', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ network: networkKey })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to switch network: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('Network switched to:', result);
+                
+                // Reload data for new network
+                await fetchData();
+            } catch (error) {
+                console.error('Error switching network:', error);
+                showError(true, error.message);
+                showLoading(false);
+            }
+        }
+        
+        function updateNetworkSelector() {
+            const selector = document.getElementById('networkSelect');
+            if (selector && availableNetworks.length > 0) {
+                // Update options
+                selector.innerHTML = availableNetworks.map(network => 
+                    `<option value="${network.key}" ${network.isActive ? 'selected' : ''}>${network.name}</option>`
+                ).join('');
+            }
+        }
+        
         // Data fetching
         async function fetchData() {
             console.log("Fetching data from API...");
@@ -677,6 +738,15 @@
 
                 currentData = await response.json();
                 console.log("Data received:", currentData);
+                
+                // Update network selector if network changed
+                if (currentData.network) {
+                    const selector = document.getElementById('networkSelect');
+                    if (selector) {
+                        selector.value = currentData.network;
+                    }
+                }
+                
                 updateNetworkInfo();
                 updateDashboard();
                 showLoading(false);
@@ -718,7 +788,15 @@
 
         // Update functions
         function updateNetworkInfo() {
-            const { networkInfo, lastUpdate } = currentData;
+            const { networkInfo, lastUpdate, networkName } = currentData;
+            
+            // Update network name in header if available
+            if (networkName) {
+                const header = document.querySelector('.header h1');
+                if (header) {
+                    header.textContent = `Thesauros Monitoring Dashboard - ${networkName}`;
+                }
+            }
             
             document.getElementById('chainId').textContent = networkInfo.chainId || 'Unknown';
             document.getElementById('blockNumber').textContent = networkInfo.blockNumber?.toLocaleString() || 'Unknown';
@@ -967,6 +1045,7 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            loadNetworks();
             fetchData();
             setupWebSocket();
             

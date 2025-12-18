@@ -13,28 +13,61 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// Initialize provider with retry logic
-let provider;
-async function initializeProvider() {
-  try {
-    provider = new ethers.JsonRpcProvider(process.env.ARBITRUM_ONE_RPC_URL || 'https://arb1.arbitrum.io/rpc');
-    await provider.getNetwork(); // Test connection
-    console.log('Provider initialized successfully');
-  } catch (error) {
-    console.error('Failed to initialize provider:', error);
-    process.exit(1);
+// Network configurations
+const NETWORKS = {
+  arbitrumOne: {
+    name: 'Arbitrum One',
+    chainId: 42161,
+    rpcUrl: process.env.ARBITRUM_ONE_RPC_URL || 'https://arb1.arbitrum.io/rpc',
+    configPath: path.join(__dirname, 'deployments', 'arbitrumOne', 'deployed-vaults.json'),
+    explorer: 'https://arbiscan.io'
+  },
+  base: {
+    name: 'Base',
+    chainId: 8453,
+    rpcUrl: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
+    configPath: path.join(__dirname, 'deployments', 'base', 'deployed-vaults.json'),
+    explorer: 'https://basescan.org'
+  }
+};
+
+// Store providers and configs for each network
+const providers = {};
+const configs = {};
+let currentNetwork = 'arbitrumOne'; // Default network
+
+// Initialize providers for all networks
+async function initializeProviders() {
+  for (const [networkKey, networkConfig] of Object.entries(NETWORKS)) {
+    try {
+      const provider = new ethers.JsonRpcProvider(networkConfig.rpcUrl);
+      await provider.getNetwork(); // Test connection
+      providers[networkKey] = provider;
+      console.log(`${networkConfig.name} provider initialized successfully`);
+      
+      // Load configuration
+      try {
+        configs[networkKey] = require(networkConfig.configPath);
+        console.log(`${networkConfig.name} configuration loaded successfully`);
+      } catch (error) {
+        console.error(`Failed to load config for ${networkConfig.name}:`, error);
+        configs[networkKey] = null;
+      }
+    } catch (error) {
+      console.error(`Failed to initialize provider for ${networkConfig.name}:`, error);
+      providers[networkKey] = null;
+      configs[networkKey] = null;
+    }
   }
 }
 
-// Load configuration
-const configPath = path.join(__dirname, 'deployments', 'arbitrumOne', 'deployed-vaults.json');
-let config = null;
+// Get current provider and config
+function getCurrentProvider() {
+  return providers[currentNetwork];
+}
 
-try {
-  config = require(configPath);
-  console.log('Configuration loaded successfully');
-} catch (error) {
-  console.error('Failed to load config:', error);
+function getCurrentConfig() {
+  return configs[currentNetwork];
 }
 
 // Helper function to serialize BigInt values
@@ -64,6 +97,45 @@ app.get('/api/health', (req, res) => {
     uptime: process.uptime(),
     memory: process.memoryUsage(),
     version: process.env.npm_package_version || '1.0.0'
+  });
+});
+
+// Network management endpoints
+app.get('/api/networks', (req, res) => {
+  const networks = Object.entries(NETWORKS).map(([key, network]) => ({
+    key,
+    name: network.name,
+    chainId: network.chainId,
+    explorer: network.explorer,
+    isActive: key === currentNetwork,
+    hasConfig: configs[key] !== null && configs[key] !== undefined
+  }));
+  res.json(networks);
+});
+
+app.get('/api/network/current', (req, res) => {
+  res.json({
+    network: currentNetwork,
+    networkInfo: NETWORKS[currentNetwork],
+    hasConfig: getCurrentConfig() !== null
+  });
+});
+
+app.post('/api/network/switch', (req, res) => {
+  const { network } = req.body;
+  if (!network || !NETWORKS[network]) {
+    return res.status(400).json({ error: 'Invalid network' });
+  }
+  
+  if (!providers[network]) {
+    return res.status(400).json({ error: `Provider for ${network} is not initialized` });
+  }
+  
+  currentNetwork = network;
+  res.json({
+    success: true,
+    network: currentNetwork,
+    networkInfo: NETWORKS[currentNetwork]
   });
 });
 
@@ -140,6 +212,8 @@ app.get('/api/stats', async (req, res) => {
 app.get('/api/dashboard', async (req, res) => {
   try {
     const dashboardData = {
+      network: currentNetwork,
+      networkName: NETWORKS[currentNetwork].name,
       vaults: await getVaultData(),
       providers: await getProviderData(),
       apyData: await getAPYData(),
@@ -158,7 +232,9 @@ app.get('/api/dashboard', async (req, res) => {
 
 // Data fetching functions
 async function getVaultData() {
-  if (!config) return [];
+  const config = getCurrentConfig();
+  const provider = getCurrentProvider();
+  if (!config || !provider) return [];
   
   const vaults = [];
   
@@ -241,7 +317,9 @@ async function getVaultData() {
 }
 
 async function getProviderData() {
-  if (!config) return [];
+  const config = getCurrentConfig();
+  const provider = getCurrentProvider();
+  if (!config || !provider) return [];
   
   const providers = [];
   
@@ -304,9 +382,11 @@ async function getProviderData() {
 }
 
 async function getAPYData() {
+  const config = getCurrentConfig();
+  const provider = getCurrentProvider();
   const apyData = [];
   
-  if (config) {
+  if (config && provider) {
     for (const [token, vaultConfig] of Object.entries(config.vaults)) {
       try {
         const vault = new ethers.Contract(vaultConfig.address, [
@@ -377,6 +457,16 @@ async function getRecentEvents() {
 }
 
 async function getNetworkInfo() {
+  const provider = getCurrentProvider();
+  const networkConfig = NETWORKS[currentNetwork];
+  
+  if (!provider) {
+    return {
+      error: 'Provider not initialized',
+      lastUpdate: new Date().toISOString()
+    };
+  }
+  
   try {
     const [blockNumber, gasPrice] = await Promise.all([
       provider.getBlockNumber(),
@@ -384,13 +474,18 @@ async function getNetworkInfo() {
     ]);
     
     return {
+      network: currentNetwork,
+      networkName: networkConfig.name,
       chainId: await provider.getNetwork().then(n => n.chainId),
       blockNumber: blockNumber,
       gasPrice: ethers.formatUnits(gasPrice.gasPrice, 'gwei'),
+      explorer: networkConfig.explorer,
       lastUpdate: new Date().toISOString()
     };
   } catch (error) {
     return {
+      network: currentNetwork,
+      networkName: networkConfig.name,
       error: error.message,
       lastUpdate: new Date().toISOString()
     };
@@ -470,7 +565,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'simple-dashboard.html'));
 });
 
-initializeProvider().then(() => {
+initializeProviders().then(() => {
   // Clean old logs on startup
   logger.cleanOldLogs();
   
